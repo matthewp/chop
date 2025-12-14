@@ -1,5 +1,5 @@
 CC = gcc
-VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "devel")
+VERSION := $(shell (git describe --tags --always --dirty 2>/dev/null || echo "devel") | sed 's/^v//')
 CFLAGS = -Wall -Wextra -pedantic -std=c99 -D_POSIX_C_SOURCE=200809L -g -DVERSION=\"$(VERSION)\"
 LDFLAGS =
 
