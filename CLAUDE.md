@@ -1,0 +1,51 @@
+# chop - Unix-philosophy CLI todo manager
+
+A stream filter for todo lists. Reads stdin, writes stdout. Designed to be composable with unix tools like `fzf`, `grep`, `sort`, `sponge`.
+
+Tip: Install `moreutils` for `sponge` (`apt install moreutils` / `brew install moreutils`).
+
+## Build
+
+```bash
+make        # build
+make clean  # clean build artifacts
+```
+
+## Usage
+
+```bash
+# Filter/format (stdin → stdout)
+cat todos.txt | chop                    # normalize to todo format
+cat todos.txt | chop --todo             # filter: pending only
+cat todos.txt | chop --done             # filter: done only
+cat todos.txt | chop --in-progress      # filter: in-progress only
+
+# Any text becomes todos
+echo "Buy milk" | chop                  # outputs: - [ ] Buy milk
+
+# Add new todos
+chop add "Buy milk" >> todos.txt        # emit a todo line
+echo "Call mom" | chop add >> todos.txt # from stdin
+
+# Modify todos in stream (by line number)
+cat todos.txt | chop done 3 | sponge todos.txt
+cat todos.txt | chop status in-progress 2 | sponge todos.txt
+```
+
+## Pipe-friendly
+
+Output format is `- [status] text` (same as input), so files stay hand-editable.
+
+## File format
+
+```
+- [ ] Pending task
+- [x] Completed task
+- [>] In-progress task
+```
+
+## Code structure
+
+- `main.c` - CLI entry point, stream processing
+- `chop.c` / `chop.h` - Core library: parsing, status utilities
+- `Makefile` - Build system (gcc, C99 + POSIX)

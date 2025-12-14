@@ -1,0 +1,75 @@
+# chop
+
+A stream filter for todo lists. Like `sed` or `sort`, but for todos.
+
+```bash
+echo "Buy milk" | chop
+# - [ ] Buy milk
+
+cat todos.txt | chop --todo
+# - [ ] Pending item 1
+# - [ ] Pending item 2
+```
+
+Chop normalizes any text into todo format and filters by status. It reads from stdin, writes to stdout, and composes with standard unix tools.
+
+## Install
+
+```bash
+make
+sudo make install  # copies to /usr/local/bin
+```
+
+## Usage
+
+```bash
+# Normalize text to todos
+cat notes.txt | chop > todos.txt
+
+# Filter by status
+cat todos.txt | chop --todo          # pending only
+cat todos.txt | chop --done          # completed only
+cat todos.txt | chop --in-progress   # in-progress only
+
+# Add new items
+chop add "Buy milk" >> todos.txt
+echo "Call mom" | chop add >> todos.txt
+
+# Mark items done (by line number)
+cat todos.txt | chop done 3 | sponge todos.txt
+cat todos.txt | chop status in-progress 2 | sponge todos.txt
+```
+
+## File format
+
+Standard markdown checkboxes:
+
+```
+- [ ] Pending task
+- [x] Completed task
+- [>] In-progress task
+```
+
+Any plain text piped through chop becomes `- [ ] text`.
+
+## Composing with other tools
+
+```bash
+# Interactive selection with fzf
+cat todos.txt | chop --todo | fzf
+
+# Sort alphabetically
+cat todos.txt | chop | sort
+
+# Count pending items
+cat todos.txt | chop --todo | wc -l
+
+# In-place editing (requires moreutils)
+cat todos.txt | chop done 1 | sponge todos.txt
+```
+
+Install `moreutils` for `sponge`: `apt install moreutils` or `brew install moreutils`
+
+## License
+
+BSD 3-Clause. See [LICENSE](LICENSE).
