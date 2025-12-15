@@ -11,7 +11,6 @@ static void usage(const char *prog) {
     fprintf(stderr, "\nStream filter for todo lists. Reads stdin, writes stdout.\n");
     fprintf(stderr, "\nCommands:\n");
     fprintf(stderr, "  (none)                Filter/format todos from stdin\n");
-    fprintf(stderr, "  add <text>            Emit a new todo line\n");
     fprintf(stderr, "  start [id]            Mark todo as in-progress\n");
     fprintf(stderr, "  done [id]             Mark todo as done\n");
     fprintf(stderr, "  status <status> [id]  Set status (todo, done, in-progress)\n");
@@ -25,9 +24,8 @@ static void usage(const char *prog) {
     fprintf(stderr, "\nExamples:\n");
     fprintf(stderr, "  cat todos.txt | %s                     # format all\n", prog);
     fprintf(stderr, "  cat todos.txt | %s --in-progress       # filter to in-progress\n", prog);
-    fprintf(stderr, "  cat todos.txt | %s done 3 | sponge todos.txt\n", prog);
     fprintf(stderr, "  cat todos.txt | %s done --fzf | sponge todos.txt\n", prog);
-    fprintf(stderr, "  %s add \"Buy milk\" >> todos.txt\n", prog);
+    fprintf(stderr, "  echo \"Buy milk\" | %s >> todos.txt\n", prog);
 }
 
 /* Helper to parse a line into a todo */
@@ -141,30 +139,6 @@ static int cmd_filter(int filter, TodoStatus filter_status) {
     }
 
     todolist_free(list);
-    return 0;
-}
-
-/* Emit a new todo line */
-static int cmd_add(int argc, char **argv, int arg_start) {
-    if (arg_start >= argc) {
-        /* Read text from stdin */
-        char line[1024];
-        while (fgets(line, sizeof(line), stdin)) {
-            size_t len = strlen(line);
-            while (len > 0 && (line[len-1] == '\n' || line[len-1] == '\r')) len--;
-            if (len > 0) {
-                printf("- [ ] %.*s\n", (int)len, line);
-            }
-        }
-    } else {
-        /* Join args as text */
-        char text[1024] = {0};
-        for (int i = arg_start; i < argc; i++) {
-            if (text[0]) strcat(text, " ");
-            strncat(text, argv[i], sizeof(text) - strlen(text) - 1);
-        }
-        printf("- [ ] %s\n", text);
-    }
     return 0;
 }
 
@@ -296,9 +270,7 @@ int main(int argc, char **argv) {
 
     const char *cmd = argv[i++];
 
-    if (strcmp(cmd, "add") == 0) {
-        return cmd_add(argc, argv, i);
-    } else if (strcmp(cmd, "start") == 0) {
+    if (strcmp(cmd, "start") == 0) {
         int id = 0;
         while (i < argc) {
             if (strcmp(argv[i], "--fzf") == 0) {

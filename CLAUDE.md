@@ -24,8 +24,7 @@ cat todos.txt | chop --in-progress      # filter: in-progress only
 echo "Buy milk" | chop                  # outputs: - [ ] Buy milk
 
 # Add new todos
-chop add "Buy milk" >> todos.txt        # emit a todo line
-echo "Call mom" | chop add >> todos.txt # from stdin
+echo "Buy milk" | chop >> todos.txt
 
 # Modify todos in stream (interactive with fzf)
 cat todos.txt | chop start --fzf | sponge todos.txt  # in-progress

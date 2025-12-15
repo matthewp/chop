@@ -32,8 +32,7 @@ cat todos.txt | chop --done          # completed only
 cat todos.txt | chop --in-progress   # in-progress only
 
 # Add new items
-chop add "Buy milk" >> todos.txt
-echo "Call mom" | chop add >> todos.txt
+echo "Buy milk" | chop >> todos.txt
 
 # Mark items (interactive with fzf)
 cat todos.txt | chop start --fzf | sponge todos.txt  # in-progress
