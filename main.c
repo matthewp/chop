@@ -7,26 +7,38 @@
 #endif
 
 static void usage(const char *prog) {
-    fprintf(stderr, "Usage: %s [options] [command]\n", prog);
+    fprintf(stderr, "Usage: %s [options]\n", prog);
     fprintf(stderr, "\nStream filter for todo lists. Reads stdin, writes stdout.\n");
-    fprintf(stderr, "\nCommands:\n");
-    fprintf(stderr, "  (none)          Filter/format todos from stdin\n");
-    fprintf(stderr, "  start           Mark all todos as in-progress\n");
-    fprintf(stderr, "  done            Mark all todos as done\n");
-    fprintf(stderr, "  status <status> Set status (todo, done, in-progress)\n");
     fprintf(stderr, "\nOptions:\n");
-    fprintf(stderr, "  --todo          Filter: show only pending\n");
-    fprintf(stderr, "  --done          Filter: show only done\n");
-    fprintf(stderr, "  --in-progress   Filter: show only in-progress\n");
-    fprintf(stderr, "  --fzf           Select interactively with fzf (with commands)\n");
+    fprintf(stderr, "  --filter=STATUS Filter by status (todo, done, in-progress)\n");
+    fprintf(stderr, "  --mark=STATUS   Mark all with status (todo, done, in-progress)\n");
+    fprintf(stderr, "  --fzf           With --mark: select interactively\n");
     fprintf(stderr, "  -v, --version   Show version\n");
     fprintf(stderr, "  -h, --help      Show this help message\n");
+    fprintf(stderr, "\nShort forms:\n");
+    fprintf(stderr, "  -ft, -fd, -fip  Filter: todo, done, in-progress\n");
+    fprintf(stderr, "  -mt, -md, -mip  Mark: todo, done, in-progress\n");
     fprintf(stderr, "\nExamples:\n");
-    fprintf(stderr, "  cat todos.txt | %s                     # format all\n", prog);
-    fprintf(stderr, "  cat todos.txt | %s --todo              # filter to pending\n", prog);
-    fprintf(stderr, "  cat todos.txt | %s done | sponge todos.txt  # mark all done\n", prog);
-    fprintf(stderr, "  cat todos.txt | %s done --fzf | sponge todos.txt  # select with fzf\n", prog);
+    fprintf(stderr, "  cat todos.txt | %s                # format all\n", prog);
+    fprintf(stderr, "  cat todos.txt | %s -ft            # filter to pending\n", prog);
+    fprintf(stderr, "  cat todos.txt | %s -md | sponge todos.txt  # mark all done\n", prog);
+    fprintf(stderr, "  cat todos.txt | %s -mip --fzf | sponge todos.txt\n", prog);
     fprintf(stderr, "  echo \"Buy milk\" | %s >> todos.txt\n", prog);
+}
+
+/* Parse short status code: t=todo, d=done, ip=in-progress */
+static int parse_status_code(const char *code, TodoStatus *status) {
+    if (strcmp(code, "t") == 0 || strcmp(code, "todo") == 0) {
+        *status = STATUS_TODO;
+        return 0;
+    } else if (strcmp(code, "d") == 0 || strcmp(code, "done") == 0) {
+        *status = STATUS_DONE;
+        return 0;
+    } else if (strcmp(code, "ip") == 0 || strcmp(code, "in-progress") == 0) {
+        *status = STATUS_IN_PROGRESS;
+        return 0;
+    }
+    return -1;
 }
 
 /* Helper to parse a line into a todo */
@@ -232,87 +244,70 @@ static int cmd_status_fzf(TodoStatus new_status) {
 }
 
 int main(int argc, char **argv) {
-    int filter = 0;
+    int do_filter = 0;
+    int do_mark = 0;
     int use_fzf = 0;
     TodoStatus filter_status = STATUS_TODO;
+    TodoStatus mark_status = STATUS_TODO;
 
     /* Parse options */
-    int i;
-    for (i = 1; i < argc; i++) {
+    for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--version") == 0) {
             printf("%s\n", VERSION);
             return 0;
         } else if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
             usage(argv[0]);
             return 0;
-        } else if (strcmp(argv[i], "--todo") == 0) {
-            filter = 1;
-            filter_status = STATUS_TODO;
-        } else if (strcmp(argv[i], "--done") == 0) {
-            filter = 1;
-            filter_status = STATUS_DONE;
-        } else if (strcmp(argv[i], "--in-progress") == 0) {
-            filter = 1;
-            filter_status = STATUS_IN_PROGRESS;
         } else if (strcmp(argv[i], "--fzf") == 0) {
             use_fzf = 1;
+        } else if (strncmp(argv[i], "--filter=", 9) == 0) {
+            if (parse_status_code(argv[i] + 9, &filter_status) < 0) {
+                fprintf(stderr, "Invalid filter status: %s\n", argv[i] + 9);
+                return 1;
+            }
+            do_filter = 1;
+        } else if (strncmp(argv[i], "--mark=", 7) == 0) {
+            if (parse_status_code(argv[i] + 7, &mark_status) < 0) {
+                fprintf(stderr, "Invalid mark status: %s\n", argv[i] + 7);
+                return 1;
+            }
+            do_mark = 1;
+        } else if (strcmp(argv[i], "-ft") == 0) {
+            do_filter = 1;
+            filter_status = STATUS_TODO;
+        } else if (strcmp(argv[i], "-fd") == 0) {
+            do_filter = 1;
+            filter_status = STATUS_DONE;
+        } else if (strcmp(argv[i], "-fip") == 0) {
+            do_filter = 1;
+            filter_status = STATUS_IN_PROGRESS;
+        } else if (strcmp(argv[i], "-mt") == 0) {
+            do_mark = 1;
+            mark_status = STATUS_TODO;
+        } else if (strcmp(argv[i], "-md") == 0) {
+            do_mark = 1;
+            mark_status = STATUS_DONE;
+        } else if (strcmp(argv[i], "-mip") == 0) {
+            do_mark = 1;
+            mark_status = STATUS_IN_PROGRESS;
         } else if (argv[i][0] == '-' && strcmp(argv[i], "-") != 0) {
             fprintf(stderr, "Unknown option: %s\n", argv[i]);
             usage(argv[0]);
             return 1;
         } else {
-            break;
-        }
-    }
-
-    /* No command - filter/format stdin */
-    if (i >= argc) {
-        return cmd_filter(filter, filter_status);
-    }
-
-    const char *cmd = argv[i++];
-
-    if (strcmp(cmd, "start") == 0) {
-        while (i < argc) {
-            if (strcmp(argv[i], "--fzf") == 0) {
-                use_fzf = 1;
-            }
-            i++;
-        }
-        if (use_fzf) {
-            return cmd_status_fzf(STATUS_IN_PROGRESS);
-        }
-        return cmd_status_stream(STATUS_IN_PROGRESS, 0);
-    } else if (strcmp(cmd, "done") == 0) {
-        while (i < argc) {
-            if (strcmp(argv[i], "--fzf") == 0) {
-                use_fzf = 1;
-            }
-            i++;
-        }
-        if (use_fzf) {
-            return cmd_status_fzf(STATUS_DONE);
-        }
-        return cmd_status_stream(STATUS_DONE, 0);
-    } else if (strcmp(cmd, "status") == 0) {
-        if (i >= argc) {
-            fprintf(stderr, "status requires a status argument (todo, done, in-progress)\n");
+            fprintf(stderr, "Unexpected argument: %s\n", argv[i]);
+            usage(argv[0]);
             return 1;
         }
-        TodoStatus new_status = status_from_str(argv[i++]);
-        while (i < argc) {
-            if (strcmp(argv[i], "--fzf") == 0) {
-                use_fzf = 1;
-            }
-            i++;
-        }
-        if (use_fzf) {
-            return cmd_status_fzf(new_status);
-        }
-        return cmd_status_stream(new_status, 0);
-    } else {
-        fprintf(stderr, "Unknown command: %s\n", cmd);
-        usage(argv[0]);
-        return 1;
     }
+
+    /* Execute based on flags */
+    if (do_mark) {
+        if (use_fzf) {
+            return cmd_status_fzf(mark_status);
+        }
+        return cmd_status_stream(mark_status, 0);
+    }
+
+    return cmd_filter(do_filter, filter_status);
 }

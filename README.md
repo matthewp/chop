@@ -27,21 +27,23 @@ sudo make install  # copies to /usr/local/bin
 cat notes.txt | chop > todos.txt
 
 # Filter by status
-cat todos.txt | chop --todo          # pending only
-cat todos.txt | chop --done          # completed only
-cat todos.txt | chop --in-progress   # in-progress only
+cat todos.txt | chop -ft             # pending only
+cat todos.txt | chop -fd             # completed only
+cat todos.txt | chop -fip            # in-progress only
 
 # Add new items
 echo "Buy milk" | chop >> todos.txt
 
 # Mark all items
-cat todos.txt | chop done | sponge todos.txt   # all done
-cat todos.txt | chop start | sponge todos.txt  # all in-progress
+cat todos.txt | chop -md | sponge todos.txt   # all done
+cat todos.txt | chop -mip | sponge todos.txt  # all in-progress
 
 # Mark items interactively (with fzf)
-cat todos.txt | chop done --fzf | sponge todos.txt
-cat todos.txt | chop start --fzf | sponge todos.txt
+cat todos.txt | chop -md --fzf | sponge todos.txt
+cat todos.txt | chop -mip --fzf | sponge todos.txt
 ```
+
+Long forms: `--filter=todo`, `--filter=done`, `--filter=in-progress`, `--mark=todo`, `--mark=done`, `--mark=in-progress`
 
 ## File format
 
@@ -59,13 +61,13 @@ Any plain text piped through chop becomes `- [ ] text`.
 
 ```bash
 # Browse with fzf
-cat todos.txt | chop --todo | fzf
+cat todos.txt | chop -ft | fzf
 
 # Sort alphabetically
 cat todos.txt | chop | sort
 
 # Count pending items
-cat todos.txt | chop --todo | wc -l
+cat todos.txt | chop -ft | wc -l
 ```
 
 Install `moreutils` for `sponge`: `apt install moreutils` or `brew install moreutils`
