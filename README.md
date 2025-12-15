@@ -6,12 +6,12 @@ A stream filter for todo lists. Like `sed` or `sort`, but for todos.
 echo "Buy milk" | chop
 # - [ ] Buy milk
 
-cat todos.txt | chop --todo
+chop -ft < todos.txt
 # - [ ] Pending item 1
 # - [ ] Pending item 2
 ```
 
-Chop normalizes any text into todo format and filters by status. It reads from stdin, writes to stdout, and composes with standard unix tools.
+Chop normalizes any text into todo format and filters by status. It reads from stdin (via `<` or pipe), writes to stdout, and composes with standard unix tools.
 
 ## Install
 
@@ -24,24 +24,26 @@ sudo make install  # copies to /usr/local/bin
 
 ```bash
 # Normalize text to todos
-cat notes.txt | chop > todos.txt
+chop < notes.txt > todos.txt
 
 # Filter by status
-cat todos.txt | chop -ft             # pending only
-cat todos.txt | chop -fd             # completed only
-cat todos.txt | chop -fip            # in-progress only
+chop -ft < todos.txt            # pending only
+chop -fd < todos.txt            # completed only
+chop -fip < todos.txt           # in-progress only
 
 # Add new items
 echo "Buy milk" | chop >> todos.txt
 
 # Mark all items
-cat todos.txt | chop -md | sponge todos.txt   # all done
-cat todos.txt | chop -mip | sponge todos.txt  # all in-progress
+chop -md < todos.txt | sponge todos.txt   # all done
+chop -mip < todos.txt | sponge todos.txt  # all in-progress
 
 # Mark items interactively (with fzf)
-cat todos.txt | chop -md --fzf | sponge todos.txt
-cat todos.txt | chop -mip --fzf | sponge todos.txt
+chop -md --fzf < todos.txt | sponge todos.txt
+chop -mip --fzf < todos.txt | sponge todos.txt
 ```
+
+Both `chop < file` and `cat file | chop` work - use whichever you prefer.
 
 Long forms: `--filter=todo`, `--filter=done`, `--filter=in-progress`, `--mark=todo`, `--mark=done`, `--mark=in-progress`
 
