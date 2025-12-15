@@ -26,9 +26,13 @@ echo "Buy milk" | chop                  # outputs: - [ ] Buy milk
 # Add new todos
 echo "Buy milk" | chop >> todos.txt
 
-# Modify todos in stream (interactive with fzf)
-cat todos.txt | chop start --fzf | sponge todos.txt  # in-progress
-cat todos.txt | chop done --fzf | sponge todos.txt   # done
+# Mark all items in stream
+cat todos.txt | chop done | sponge todos.txt   # all done
+cat todos.txt | chop start | sponge todos.txt  # all in-progress
+
+# Or select interactively with fzf
+cat todos.txt | chop done --fzf | sponge todos.txt
+cat todos.txt | chop start --fzf | sponge todos.txt
 ```
 
 ## Pipe-friendly

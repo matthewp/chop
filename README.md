@@ -34,12 +34,13 @@ cat todos.txt | chop --in-progress   # in-progress only
 # Add new items
 echo "Buy milk" | chop >> todos.txt
 
-# Mark items (interactive with fzf)
-cat todos.txt | chop start --fzf | sponge todos.txt  # in-progress
-cat todos.txt | chop done --fzf | sponge todos.txt   # done
+# Mark all items
+cat todos.txt | chop done | sponge todos.txt   # all done
+cat todos.txt | chop start | sponge todos.txt  # all in-progress
 
-# Or by line number
-cat todos.txt | chop done 3 | sponge todos.txt
+# Mark items interactively (with fzf)
+cat todos.txt | chop done --fzf | sponge todos.txt
+cat todos.txt | chop start --fzf | sponge todos.txt
 ```
 
 ## File format
