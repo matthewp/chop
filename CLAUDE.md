@@ -27,9 +27,9 @@ echo "Buy milk" | chop                  # outputs: - [ ] Buy milk
 chop add "Buy milk" >> todos.txt        # emit a todo line
 echo "Call mom" | chop add >> todos.txt # from stdin
 
-# Modify todos in stream (by line number)
-cat todos.txt | chop done 3 | sponge todos.txt
-cat todos.txt | chop status in-progress 2 | sponge todos.txt
+# Modify todos in stream (interactive with fzf)
+cat todos.txt | chop start --fzf | sponge todos.txt  # in-progress
+cat todos.txt | chop done --fzf | sponge todos.txt   # done
 ```
 
 ## Pipe-friendly

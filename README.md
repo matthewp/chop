@@ -35,9 +35,12 @@ cat todos.txt | chop --in-progress   # in-progress only
 chop add "Buy milk" >> todos.txt
 echo "Call mom" | chop add >> todos.txt
 
-# Mark items done (by line number)
+# Mark items (interactive with fzf)
+cat todos.txt | chop start --fzf | sponge todos.txt  # in-progress
+cat todos.txt | chop done --fzf | sponge todos.txt   # done
+
+# Or by line number
 cat todos.txt | chop done 3 | sponge todos.txt
-cat todos.txt | chop status in-progress 2 | sponge todos.txt
 ```
 
 ## File format
@@ -55,7 +58,7 @@ Any plain text piped through chop becomes `- [ ] text`.
 ## Composing with other tools
 
 ```bash
-# Interactive selection with fzf
+# Browse with fzf
 cat todos.txt | chop --todo | fzf
 
 # Sort alphabetically
@@ -63,9 +66,6 @@ cat todos.txt | chop | sort
 
 # Count pending items
 cat todos.txt | chop --todo | wc -l
-
-# In-place editing (requires moreutils)
-cat todos.txt | chop done 1 | sponge todos.txt
 ```
 
 Install `moreutils` for `sponge`: `apt install moreutils` or `brew install moreutils`
