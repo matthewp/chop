@@ -37,6 +37,8 @@ cat todos.txt | chop -mip --fzf | sponge todos.txt
 
 Long forms: `--include=STATUS`, `--exclude=STATUS`, `--mark=STATUS` (STATUS: todo, done, in-progress)
 
+The `-f FILE` and `-w` flags exist for alias convenience, but stream processing is the primary interface. Don't over-emphasize file mode in docs.
+
 ## Pipe-friendly
 
 Output format is `- [status] text` (same as input), so files stay hand-editable.

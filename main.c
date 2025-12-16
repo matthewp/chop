@@ -14,6 +14,8 @@ static void usage(const char *prog) {
     fprintf(stderr, "  --exclude=STATUS  Exclude STATUS (todo, done, in-progress)\n");
     fprintf(stderr, "  --mark=STATUS     Mark all with status (todo, done, in-progress)\n");
     fprintf(stderr, "  --fzf             With --mark: select interactively\n");
+    fprintf(stderr, "  -f, --file=FILE   Read from FILE instead of stdin\n");
+    fprintf(stderr, "  -w, --write       Write back to FILE (requires -f)\n");
     fprintf(stderr, "  -v, --version     Show version\n");
     fprintf(stderr, "  -h, --help        Show this help message\n");
     fprintf(stderr, "\nShort forms:\n");
@@ -25,7 +27,7 @@ static void usage(const char *prog) {
     fprintf(stderr, "  cat todos.txt | %s -it            # include pending only\n", prog);
     fprintf(stderr, "  cat todos.txt | %s -xd            # exclude done (clear finished)\n", prog);
     fprintf(stderr, "  cat todos.txt | %s -md | sponge todos.txt  # mark all done\n", prog);
-    fprintf(stderr, "  cat todos.txt | %s -mip --fzf | sponge todos.txt\n", prog);
+    fprintf(stderr, "  %s -f todos.txt -xd -w            # clear done items in-place\n", prog);
     fprintf(stderr, "  echo \"Buy milk\" | %s >> todos.txt\n", prog);
 }
 
@@ -102,14 +104,14 @@ static int grow_list(TodoList *list) {
     return 0;
 }
 
-/* Read todos from stdin into list */
-static TodoList *read_todos_from_stdin(void) {
+/* Read todos from a file handle into list */
+static TodoList *read_todos(FILE *in) {
     TodoList *list = todolist_new();
     if (!list) return NULL;
 
     char line[1024];
     int id = 1;
-    while (fgets(line, sizeof(line), stdin)) {
+    while (fgets(line, sizeof(line), in)) {
         if (list->count >= list->capacity) {
             if (grow_list(list) < 0) {
                 todolist_free(list);
@@ -127,20 +129,20 @@ static TodoList *read_todos_from_stdin(void) {
     return list;
 }
 
-/* Output all todos */
-static void output_todos(TodoList *list) {
+/* Output all todos to a file handle */
+static void output_todos(TodoList *list, FILE *out) {
     for (size_t i = 0; i < list->count; i++) {
         Todo *todo = &list->items[i];
         if (todo->text) {
-            fprintf(stdout, "- [%c] %s\n", status_to_char(todo->status), todo->text);
+            fprintf(out, "- [%c] %s\n", status_to_char(todo->status), todo->text);
         }
     }
 }
 
-/* Format/filter stdin to stdout */
-static int cmd_filter(int do_include, TodoStatus include_status,
+/* Format/filter input to output */
+static int cmd_filter(FILE *in, FILE *out, int do_include, TodoStatus include_status,
                       int do_exclude, TodoStatus exclude_status) {
-    TodoList *list = read_todos_from_stdin();
+    TodoList *list = read_todos(in);
     if (!list) {
         fprintf(stderr, "Failed to allocate memory\n");
         return 1;
@@ -153,7 +155,7 @@ static int cmd_filter(int do_include, TodoStatus include_status,
             if (do_include && todo->status != include_status) show = 0;
             if (do_exclude && todo->status == exclude_status) show = 0;
             if (show) {
-                fprintf(stdout, "- [%c] %s\n", status_to_char(todo->status), todo->text);
+                fprintf(out, "- [%c] %s\n", status_to_char(todo->status), todo->text);
             }
         }
     }
@@ -163,8 +165,8 @@ static int cmd_filter(int do_include, TodoStatus include_status,
 }
 
 /* Modify status in stream - all items or specific ID */
-static int cmd_status_stream(TodoStatus new_status, int target_id) {
-    TodoList *list = read_todos_from_stdin();
+static int cmd_status_stream(FILE *in, FILE *out, TodoStatus new_status, int target_id) {
+    TodoList *list = read_todos(in);
     if (!list) {
         fprintf(stderr, "Failed to allocate memory\n");
         return 1;
@@ -179,14 +181,14 @@ static int cmd_status_stream(TodoStatus new_status, int target_id) {
         }
     }
 
-    output_todos(list);
+    output_todos(list, out);
     todolist_free(list);
     return 0;
 }
 
 /* Modify status with fzf selection */
-static int cmd_status_fzf(TodoStatus new_status) {
-    TodoList *list = read_todos_from_stdin();
+static int cmd_status_fzf(FILE *in, FILE *out, TodoStatus new_status) {
+    TodoList *list = read_todos(in);
     if (!list) {
         fprintf(stderr, "Failed to allocate memory\n");
         return 1;
@@ -213,10 +215,10 @@ static int cmd_status_fzf(TodoStatus new_status) {
         pclose(fzf);
 
         /* Read selection */
-        FILE *out = fopen("/tmp/chop_fzf_out", "r");
-        if (out) {
+        FILE *fzf_out = fopen("/tmp/chop_fzf_out", "r");
+        if (fzf_out) {
             char selected[1024];
-            while (fgets(selected, sizeof(selected), out)) {
+            while (fgets(selected, sizeof(selected), fzf_out)) {
                 /* Find matching todo by text */
                 size_t sel_len = strlen(selected);
                 while (sel_len > 0 && (selected[sel_len-1] == '\n' || selected[sel_len-1] == '\r')) {
@@ -235,7 +237,7 @@ static int cmd_status_fzf(TodoStatus new_status) {
                     }
                 }
             }
-            fclose(out);
+            fclose(fzf_out);
             unlink("/tmp/chop_fzf_out");
         }
     } else {
@@ -245,7 +247,7 @@ static int cmd_status_fzf(TodoStatus new_status) {
         return 1;
     }
 
-    output_todos(list);
+    output_todos(list, out);
     todolist_free(list);
     return 0;
 }
@@ -255,6 +257,8 @@ int main(int argc, char **argv) {
     int do_exclude = 0;
     int do_mark = 0;
     int use_fzf = 0;
+    int do_write = 0;
+    const char *file_path = NULL;
     TodoStatus include_status = STATUS_TODO;
     TodoStatus exclude_status = STATUS_TODO;
     TodoStatus mark_status = STATUS_TODO;
@@ -269,6 +273,16 @@ int main(int argc, char **argv) {
             return 0;
         } else if (strcmp(argv[i], "--fzf") == 0) {
             use_fzf = 1;
+        } else if (strcmp(argv[i], "-w") == 0 || strcmp(argv[i], "--write") == 0) {
+            do_write = 1;
+        } else if (strcmp(argv[i], "-f") == 0) {
+            if (i + 1 >= argc) {
+                fprintf(stderr, "Missing argument for -f\n");
+                return 1;
+            }
+            file_path = argv[++i];
+        } else if (strncmp(argv[i], "--file=", 7) == 0) {
+            file_path = argv[i] + 7;
         } else if (strncmp(argv[i], "--include=", 10) == 0) {
             if (parse_status_code(argv[i] + 10, &include_status) < 0) {
                 fprintf(stderr, "Invalid include status: %s\n", argv[i] + 10);
@@ -330,14 +344,66 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Cannot use --include and --exclude together\n");
         return 1;
     }
+    if (do_write && !file_path) {
+        fprintf(stderr, "--write requires --file\n");
+        return 1;
+    }
+
+    /* Set up input/output */
+    FILE *in = stdin;
+    FILE *out = stdout;
+    int result;
+
+    if (file_path) {
+        in = fopen(file_path, "r");
+        if (!in) {
+            fprintf(stderr, "Cannot open file: %s\n", file_path);
+            return 1;
+        }
+    }
+
+    /* For write mode, we need to buffer output then write to file */
+    FILE *out_buffer = NULL;
+    if (do_write) {
+        out_buffer = tmpfile();
+        if (!out_buffer) {
+            fprintf(stderr, "Cannot create temporary file\n");
+            if (file_path) fclose(in);
+            return 1;
+        }
+        out = out_buffer;
+    }
 
     /* Execute based on flags */
     if (do_mark) {
         if (use_fzf) {
-            return cmd_status_fzf(mark_status);
+            result = cmd_status_fzf(in, out, mark_status);
+        } else {
+            result = cmd_status_stream(in, out, mark_status, 0);
         }
-        return cmd_status_stream(mark_status, 0);
+    } else {
+        result = cmd_filter(in, out, do_include, include_status, do_exclude, exclude_status);
     }
 
-    return cmd_filter(do_include, include_status, do_exclude, exclude_status);
+    if (file_path) fclose(in);
+
+    /* Write buffer back to file if requested */
+    if (do_write && result == 0) {
+        rewind(out_buffer);
+        FILE *out_file = fopen(file_path, "w");
+        if (!out_file) {
+            fprintf(stderr, "Cannot write to file: %s\n", file_path);
+            fclose(out_buffer);
+            return 1;
+        }
+        char buf[4096];
+        size_t n;
+        while ((n = fread(buf, 1, sizeof(buf), out_buffer)) > 0) {
+            fwrite(buf, 1, n, out_file);
+        }
+        fclose(out_file);
+    }
+
+    if (out_buffer) fclose(out_buffer);
+    return result;
 }

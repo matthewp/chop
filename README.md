@@ -6,7 +6,7 @@ A stream filter for todo lists. Like `sed` or `sort`, but for todos.
 echo "Buy milk" | chop
 # - [ ] Buy milk
 
-chop -ft < todos.txt
+chop -it < todos.txt
 # - [ ] Pending item 1
 # - [ ] Pending item 2
 ```
@@ -26,10 +26,14 @@ sudo make install  # copies to /usr/local/bin
 # Normalize text to todos
 chop < notes.txt > todos.txt
 
-# Filter by status
-chop -ft < todos.txt            # pending only
-chop -fd < todos.txt            # completed only
-chop -fip < todos.txt           # in-progress only
+# Include by status
+chop -it < todos.txt            # pending only
+chop -id < todos.txt            # completed only
+chop -iip < todos.txt           # in-progress only
+
+# Exclude by status
+chop -xd < todos.txt            # exclude done (clear finished)
+chop -xd < todos.txt | sponge todos.txt  # clear done and save
 
 # Add new items
 echo "Buy milk" | chop >> todos.txt
@@ -45,7 +49,7 @@ chop -mip --fzf < todos.txt | sponge todos.txt
 
 Both `chop < file` and `cat file | chop` work - use whichever you prefer.
 
-Long forms: `--filter=todo`, `--filter=done`, `--filter=in-progress`, `--mark=todo`, `--mark=done`, `--mark=in-progress`
+Long forms: `--include=STATUS`, `--exclude=STATUS`, `--mark=STATUS` (STATUS: todo, done, in-progress)
 
 ## File format
 
@@ -63,16 +67,36 @@ Any plain text piped through chop becomes `- [ ] text`.
 
 ```bash
 # Browse with fzf
-cat todos.txt | chop -ft | fzf
+chop -it < todos.txt | fzf
 
 # Sort alphabetically
-cat todos.txt | chop | sort
+chop < todos.txt | sort
 
 # Count pending items
-cat todos.txt | chop -ft | wc -l
+chop -it < todos.txt | wc -l
 ```
 
 Install `moreutils` for `sponge`: `apt install moreutils` or `brew install moreutils`
+
+## File mode
+
+For convenience, `-f FILE` reads from a file and `-w` writes back to it:
+
+```bash
+chop -f todos.txt -iip          # view in-progress
+chop -f todos.txt -xd -w        # clear done items
+chop -f todos.txt -md --fzf -w  # interactive mark done
+```
+
+This is useful for shell aliases:
+
+```bash
+alias t="chop -f ~/todos.txt"
+t                    # view all
+t -iip               # view in-progress
+t -xd -w             # clear done
+t -mip --fzf -w      # mark in-progress interactively
+```
 
 ## License
 
