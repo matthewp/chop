@@ -10,17 +10,20 @@ static void usage(const char *prog) {
     fprintf(stderr, "Usage: %s [options]\n", prog);
     fprintf(stderr, "\nStream filter for todo lists. Reads stdin, writes stdout.\n");
     fprintf(stderr, "\nOptions:\n");
-    fprintf(stderr, "  --filter=STATUS Filter by status (todo, done, in-progress)\n");
-    fprintf(stderr, "  --mark=STATUS   Mark all with status (todo, done, in-progress)\n");
-    fprintf(stderr, "  --fzf           With --mark: select interactively\n");
-    fprintf(stderr, "  -v, --version   Show version\n");
-    fprintf(stderr, "  -h, --help      Show this help message\n");
+    fprintf(stderr, "  --include=STATUS  Include only STATUS (todo, done, in-progress)\n");
+    fprintf(stderr, "  --exclude=STATUS  Exclude STATUS (todo, done, in-progress)\n");
+    fprintf(stderr, "  --mark=STATUS     Mark all with status (todo, done, in-progress)\n");
+    fprintf(stderr, "  --fzf             With --mark: select interactively\n");
+    fprintf(stderr, "  -v, --version     Show version\n");
+    fprintf(stderr, "  -h, --help        Show this help message\n");
     fprintf(stderr, "\nShort forms:\n");
-    fprintf(stderr, "  -ft, -fd, -fip  Filter: todo, done, in-progress\n");
-    fprintf(stderr, "  -mt, -md, -mip  Mark: todo, done, in-progress\n");
+    fprintf(stderr, "  -it, -id, -iip    Include: todo, done, in-progress\n");
+    fprintf(stderr, "  -xt, -xd, -xip    Exclude: todo, done, in-progress\n");
+    fprintf(stderr, "  -mt, -md, -mip    Mark: todo, done, in-progress\n");
     fprintf(stderr, "\nExamples:\n");
     fprintf(stderr, "  cat todos.txt | %s                # format all\n", prog);
-    fprintf(stderr, "  cat todos.txt | %s -ft            # filter to pending\n", prog);
+    fprintf(stderr, "  cat todos.txt | %s -it            # include pending only\n", prog);
+    fprintf(stderr, "  cat todos.txt | %s -xd            # exclude done (clear finished)\n", prog);
     fprintf(stderr, "  cat todos.txt | %s -md | sponge todos.txt  # mark all done\n", prog);
     fprintf(stderr, "  cat todos.txt | %s -mip --fzf | sponge todos.txt\n", prog);
     fprintf(stderr, "  echo \"Buy milk\" | %s >> todos.txt\n", prog);
@@ -135,7 +138,8 @@ static void output_todos(TodoList *list) {
 }
 
 /* Format/filter stdin to stdout */
-static int cmd_filter(int filter, TodoStatus filter_status) {
+static int cmd_filter(int do_include, TodoStatus include_status,
+                      int do_exclude, TodoStatus exclude_status) {
     TodoList *list = read_todos_from_stdin();
     if (!list) {
         fprintf(stderr, "Failed to allocate memory\n");
@@ -145,7 +149,10 @@ static int cmd_filter(int filter, TodoStatus filter_status) {
     for (size_t i = 0; i < list->count; i++) {
         Todo *todo = &list->items[i];
         if (todo->text) {
-            if (!filter || todo->status == filter_status) {
+            int show = 1;
+            if (do_include && todo->status != include_status) show = 0;
+            if (do_exclude && todo->status == exclude_status) show = 0;
+            if (show) {
                 fprintf(stdout, "- [%c] %s\n", status_to_char(todo->status), todo->text);
             }
         }
@@ -244,10 +251,12 @@ static int cmd_status_fzf(TodoStatus new_status) {
 }
 
 int main(int argc, char **argv) {
-    int do_filter = 0;
+    int do_include = 0;
+    int do_exclude = 0;
     int do_mark = 0;
     int use_fzf = 0;
-    TodoStatus filter_status = STATUS_TODO;
+    TodoStatus include_status = STATUS_TODO;
+    TodoStatus exclude_status = STATUS_TODO;
     TodoStatus mark_status = STATUS_TODO;
 
     /* Parse options */
@@ -260,27 +269,42 @@ int main(int argc, char **argv) {
             return 0;
         } else if (strcmp(argv[i], "--fzf") == 0) {
             use_fzf = 1;
-        } else if (strncmp(argv[i], "--filter=", 9) == 0) {
-            if (parse_status_code(argv[i] + 9, &filter_status) < 0) {
-                fprintf(stderr, "Invalid filter status: %s\n", argv[i] + 9);
+        } else if (strncmp(argv[i], "--include=", 10) == 0) {
+            if (parse_status_code(argv[i] + 10, &include_status) < 0) {
+                fprintf(stderr, "Invalid include status: %s\n", argv[i] + 10);
                 return 1;
             }
-            do_filter = 1;
+            do_include = 1;
+        } else if (strncmp(argv[i], "--exclude=", 10) == 0) {
+            if (parse_status_code(argv[i] + 10, &exclude_status) < 0) {
+                fprintf(stderr, "Invalid exclude status: %s\n", argv[i] + 10);
+                return 1;
+            }
+            do_exclude = 1;
         } else if (strncmp(argv[i], "--mark=", 7) == 0) {
             if (parse_status_code(argv[i] + 7, &mark_status) < 0) {
                 fprintf(stderr, "Invalid mark status: %s\n", argv[i] + 7);
                 return 1;
             }
             do_mark = 1;
-        } else if (strcmp(argv[i], "-ft") == 0) {
-            do_filter = 1;
-            filter_status = STATUS_TODO;
-        } else if (strcmp(argv[i], "-fd") == 0) {
-            do_filter = 1;
-            filter_status = STATUS_DONE;
-        } else if (strcmp(argv[i], "-fip") == 0) {
-            do_filter = 1;
-            filter_status = STATUS_IN_PROGRESS;
+        } else if (strcmp(argv[i], "-it") == 0) {
+            do_include = 1;
+            include_status = STATUS_TODO;
+        } else if (strcmp(argv[i], "-id") == 0) {
+            do_include = 1;
+            include_status = STATUS_DONE;
+        } else if (strcmp(argv[i], "-iip") == 0) {
+            do_include = 1;
+            include_status = STATUS_IN_PROGRESS;
+        } else if (strcmp(argv[i], "-xt") == 0) {
+            do_exclude = 1;
+            exclude_status = STATUS_TODO;
+        } else if (strcmp(argv[i], "-xd") == 0) {
+            do_exclude = 1;
+            exclude_status = STATUS_DONE;
+        } else if (strcmp(argv[i], "-xip") == 0) {
+            do_exclude = 1;
+            exclude_status = STATUS_IN_PROGRESS;
         } else if (strcmp(argv[i], "-mt") == 0) {
             do_mark = 1;
             mark_status = STATUS_TODO;
@@ -301,6 +325,12 @@ int main(int argc, char **argv) {
         }
     }
 
+    /* Validate mutually exclusive flags */
+    if (do_include && do_exclude) {
+        fprintf(stderr, "Cannot use --include and --exclude together\n");
+        return 1;
+    }
+
     /* Execute based on flags */
     if (do_mark) {
         if (use_fzf) {
@@ -309,5 +339,5 @@ int main(int argc, char **argv) {
         return cmd_status_stream(mark_status, 0);
     }
 
-    return cmd_filter(do_filter, filter_status);
+    return cmd_filter(do_include, include_status, do_exclude, exclude_status);
 }

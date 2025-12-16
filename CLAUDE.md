@@ -16,9 +16,9 @@ make clean  # clean build artifacts
 ```bash
 # Filter/format (stdin → stdout)
 cat todos.txt | chop                    # normalize to todo format
-cat todos.txt | chop -ft                # filter: pending only
-cat todos.txt | chop -fd                # filter: done only
-cat todos.txt | chop -fip               # filter: in-progress only
+cat todos.txt | chop -it                # include: pending only
+cat todos.txt | chop -id                # include: done only
+cat todos.txt | chop -xd                # exclude done (clear finished)
 
 # Any text becomes todos
 echo "Buy milk" | chop                  # outputs: - [ ] Buy milk
@@ -35,7 +35,7 @@ cat todos.txt | chop -md --fzf | sponge todos.txt
 cat todos.txt | chop -mip --fzf | sponge todos.txt
 ```
 
-Long forms: `--filter=STATUS`, `--mark=STATUS` (STATUS: todo, done, in-progress)
+Long forms: `--include=STATUS`, `--exclude=STATUS`, `--mark=STATUS` (STATUS: todo, done, in-progress)
 
 ## Pipe-friendly
 
