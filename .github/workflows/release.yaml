@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
   build-freebsd:
     runs-on: ubuntu-latest
@@ -22,6 +25,11 @@ jobs:
             make
             mkdir -p release
             cp chop release/chop-freebsd-amd64
+
+            # Build package
+            VERSION=${GITHUB_REF_NAME#v}
+            export VERSION
+            ./freebsd-package/build-package.sh
 
       - name: Upload to Codeberg release
         env:
@@ -41,3 +49,25 @@ jobs:
             -X POST \
             --upload-file release/chop-freebsd-amd64 \
             "https://codeberg.org/api/v1/repos/mphillips/chop/releases/${RELEASE_ID}/assets?name=chop-freebsd-amd64"
+
+      - name: Upload FreeBSD repo artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: freebsd-repo
+          path: repo/
+
+  publish-pages:
+    needs: build-freebsd
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download FreeBSD repo
+        uses: actions/download-artifact@v4
+        with:
+          name: freebsd-repo
+          path: gh-pages/freebsd
+
+      - name: Publish to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./gh-pages

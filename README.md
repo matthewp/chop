@@ -23,6 +23,20 @@ echo "deb [signed-by=/etc/apt/keyrings/chop.asc] https://codeberg.org/api/packag
 sudo apt update && sudo apt install chop
 ```
 
+### FreeBSD (pkg)
+
+```bash
+sudo mkdir -p /usr/local/etc/pkg/repos
+cat <<'EOF' | sudo tee /usr/local/etc/pkg/repos/chop.conf
+chop: {
+  url: "https://matthewp.github.io/chop/freebsd/",
+  enabled: yes
+}
+EOF
+sudo pkg update
+sudo pkg install chop
+```
+
 ### Binary download
 
 Grab a binary from [Releases](https://codeberg.org/mphillips/chop/releases) (Linux and FreeBSD):
