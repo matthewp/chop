@@ -1,0 +1,39 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-linux:
+    runs-on: docker
+    container:
+      image: debian:bookworm
+    steps:
+      - name: Install build dependencies
+        run: |
+          apt-get update
+          apt-get install -y build-essential git
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build
+        run: make
+
+      - name: Package
+        run: |
+          mkdir -p release
+          cp chop release/chop-linux-amd64
+          cd release && sha256sum chop-linux-amd64 > checksums.txt
+
+      - name: Upload release
+        uses: actions/forgejo-release@v2
+        with:
+          direction: upload
+          release-dir: release/
+          release-notes: "Release ${{ github.ref_name }}"
+          token: ${{ secrets.RELEASE_TOKEN }}
