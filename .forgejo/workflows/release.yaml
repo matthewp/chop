@@ -7,15 +7,8 @@ on:
 
 jobs:
   build-linux:
-    runs-on: docker
-    container:
-      image: debian:bookworm
+    runs-on: codeberg-small
     steps:
-      - name: Install build dependencies
-        run: |
-          apt-get update
-          apt-get install -y build-essential git
-
       - name: Checkout
         uses: actions/checkout@v4
         with:
