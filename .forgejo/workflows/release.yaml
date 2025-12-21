@@ -29,4 +29,4 @@ jobs:
           direction: upload
           release-dir: release/
           release-notes: "Release ${{ github.ref_name }}"
-          token: ${{ secrets.RELEASE_TOKEN }}
+          token: ${{ secrets.FORGEJO_TOKEN }}
