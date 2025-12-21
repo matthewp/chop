@@ -53,8 +53,21 @@ jobs:
             https://codeberg.org/api/packages/mphillips/debian/pool/stable/main/upload
 
       - name: Upload assets
-        uses: actions/forgejo-release@v2
-        with:
-          direction: upload
-          release-dir: release/
-          token: ${{ secrets.FORGEJO_TOKEN }}
+        run: |
+          TAG=${GITHUB_REF_NAME}
+
+          # Get release ID
+          RELEASE_ID=$(curl -s \
+            -H "Authorization: token ${{ secrets.FORGEJO_TOKEN }}" \
+            "https://codeberg.org/api/v1/repos/mphillips/chop/releases/tags/${TAG}" \
+            | jq -r '.id')
+
+          # Upload each file
+          for file in release/*; do
+            filename=$(basename "$file")
+            curl --fail \
+              -H "Authorization: token ${{ secrets.FORGEJO_TOKEN }}" \
+              -X POST \
+              --upload-file "$file" \
+              "https://codeberg.org/api/v1/repos/mphillips/chop/releases/${RELEASE_ID}/assets?name=${filename}"
+          done

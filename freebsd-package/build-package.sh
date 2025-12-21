@@ -12,7 +12,7 @@ rm -rf $STAGEDIR
 mkdir -p $STAGEDIR/usr/local/bin
 
 # Copy binary to staging
-cp chop-freebsd-amd64 $STAGEDIR/usr/local/bin/chop
+cp release/chop-freebsd-amd64 $STAGEDIR/usr/local/bin/chop
 chmod +x $STAGEDIR/usr/local/bin/chop
 
 # Create manifest with version
