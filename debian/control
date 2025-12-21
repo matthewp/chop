@@ -1,0 +1,9 @@
+Package: chop
+Version: ${VERSION}
+Section: utils
+Priority: optional
+Architecture: amd64
+Maintainer: Matthew Phillips <matthew@matthewphillips.info>
+Description: Unix-philosophy CLI todo manager
+ A stream filter for todo lists. Reads stdin, writes stdout.
+ Designed to be composable with unix tools like fzf, grep, sort.

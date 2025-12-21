@@ -17,11 +17,28 @@ jobs:
       - name: Build
         run: make
 
-      - name: Package
+      - name: Package binary
         run: |
           mkdir -p release
           cp chop release/chop-linux-amd64
-          cd release && sha256sum chop-linux-amd64 > checksums.txt
+
+      - name: Build .deb
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          mkdir -p chop_${VERSION}_amd64/usr/local/bin
+          mkdir -p chop_${VERSION}_amd64/DEBIAN
+          cp chop chop_${VERSION}_amd64/usr/local/bin/
+          sed "s/\${VERSION}/${VERSION}/" debian/control > chop_${VERSION}_amd64/DEBIAN/control
+          dpkg-deb --build chop_${VERSION}_amd64
+          mv chop_${VERSION}_amd64.deb release/
+          cd release && sha256sum * > checksums.txt
+
+      - name: Upload to Debian registry
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          curl --fail --user "${{ secrets.PACKAGE_TOKEN }}" \
+            --upload-file release/chop_${VERSION}_amd64.deb \
+            https://codeberg.org/api/packages/mphillips/debian/pool/stable/main/upload
 
       - name: Upload release
         uses: actions/forgejo-release@v2

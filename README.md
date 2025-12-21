@@ -15,6 +15,26 @@ Chop normalizes any text into todo format and filters by status. It reads from s
 
 ## Install
 
+### Debian/Ubuntu (apt)
+
+```bash
+curl -fsSL https://codeberg.org/api/packages/mphillips/debian/repository.key | sudo tee /etc/apt/keyrings/chop.asc
+echo "deb [signed-by=/etc/apt/keyrings/chop.asc] https://codeberg.org/api/packages/mphillips/debian stable main" | sudo tee /etc/apt/sources.list.d/chop.list
+sudo apt update && sudo apt install chop
+```
+
+### Binary download
+
+Grab a binary from [Releases](https://codeberg.org/mphillips/chop/releases):
+
+```bash
+curl -LO https://codeberg.org/mphillips/chop/releases/download/v0.5.2/chop-linux-amd64
+chmod +x chop-linux-amd64
+sudo mv chop-linux-amd64 /usr/local/bin/chop
+```
+
+### Build from source
+
 ```bash
 make
 sudo make install  # copies to /usr/local/bin
