@@ -25,12 +25,17 @@ sudo apt update && sudo apt install chop
 
 ### Binary download
 
-Grab a binary from [Releases](https://codeberg.org/mphillips/chop/releases):
+Grab a binary from [Releases](https://codeberg.org/mphillips/chop/releases) (Linux and FreeBSD):
 
 ```bash
-curl -LO https://codeberg.org/mphillips/chop/releases/download/v0.5.2/chop-linux-amd64
-chmod +x chop-linux-amd64
-sudo mv chop-linux-amd64 /usr/local/bin/chop
+# Linux
+curl -LO https://codeberg.org/mphillips/chop/releases/latest/download/chop-linux-amd64
+
+# FreeBSD
+curl -LO https://codeberg.org/mphillips/chop/releases/latest/download/chop-freebsd-amd64
+
+chmod +x chop-*
+sudo mv chop-* /usr/local/bin/chop
 ```
 
 ### Build from source
