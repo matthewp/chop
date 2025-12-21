@@ -1,23 +1,23 @@
 CC ?= cc
-VERSION := $(shell (git describe --tags --always --dirty 2>/dev/null || echo "devel") | sed 's/^v//')
+VERSION != git describe --tags --always --dirty 2>/dev/null || echo devel
+VERSION := $(VERSION:v%=%)
 CFLAGS = -Wall -Wextra -pedantic -std=c99 -D_POSIX_C_SOURCE=200809L -g -DVERSION=\"$(VERSION)\"
 LDFLAGS =
 PREFIX ?= /usr/local
 
-SRC = main.c chop.c
-OBJ = $(SRC:.c=.o)
 BIN = chop
+OBJS = main.o chop.o
 
 all: $(BIN)
 
-$(BIN): $(OBJ)
-	$(CC) $(LDFLAGS) -o $@ $^
+$(BIN): $(OBJS)
+	$(CC) $(LDFLAGS) -o $@ $(OBJS)
 
-%.o: %.c
+.c.o:
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
-	rm -f $(OBJ) $(BIN)
+	rm -f $(OBJS) $(BIN)
 
 install: $(BIN)
 	install -m 755 $(BIN) $(PREFIX)/bin/

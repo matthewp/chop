@@ -1,0 +1,43 @@
+name: Release (FreeBSD/macOS)
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-freebsd:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build in FreeBSD
+        uses: vmactions/freebsd-vm@v1
+        with:
+          release: "14.2"
+          usesh: true
+          run: |
+            make
+            mkdir -p release
+            cp chop release/chop-freebsd-amd64
+
+      - name: Upload to Codeberg release
+        env:
+          CODEBERG_TOKEN: ${{ secrets.CODEBERG_TOKEN }}
+        run: |
+          TAG=${GITHUB_REF_NAME}
+
+          # Get release ID
+          RELEASE_ID=$(curl -s \
+            -H "Authorization: token ${CODEBERG_TOKEN}" \
+            "https://codeberg.org/api/v1/repos/mphillips/chop/releases/tags/${TAG}" \
+            | jq -r '.id')
+
+          # Upload binary
+          curl --fail \
+            -H "Authorization: token ${CODEBERG_TOKEN}" \
+            -X POST \
+            --upload-file release/chop-freebsd-amd64 \
+            "https://codeberg.org/api/v1/repos/mphillips/chop/releases/${RELEASE_ID}/assets?name=chop-freebsd-amd64"
