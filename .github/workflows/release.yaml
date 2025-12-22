@@ -50,7 +50,7 @@ jobs:
           VERSION=${VERSION#v}
           SHA256=$(sha256sum chop | awk '{print $1}')
 
-          git clone https://${GH_TOKEN}@github.com/matthewp/homebrew-chop.git
+          git clone https://matthewp:${GH_TOKEN}@github.com/matthewp/homebrew-chop.git
           cd homebrew-chop
 
           cat > Formula/chop.rb << EOF
