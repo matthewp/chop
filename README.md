@@ -19,7 +19,7 @@ Chop normalizes any text into todo format and filters by status. It reads from s
 |----------|--------|-----------------|
 | Linux | `chop-linux-amd64` | `apt install chop` |
 | FreeBSD | `chop-freebsd-amd64` | `pkg install chop` |
-| macOS | `chop-macos-arm64` | - |
+| macOS | `chop-macos-arm64` | `brew install matthewp/chop/chop` |
 
 ### Debian/Ubuntu (apt)
 
@@ -41,6 +41,12 @@ chop: {
 EOF
 sudo pkg update
 sudo pkg install chop
+```
+
+### macOS (Homebrew)
+
+```bash
+brew install matthewp/chop/chop
 ```
 
 ### Binary download

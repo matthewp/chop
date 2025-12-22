@@ -41,6 +41,41 @@ jobs:
             --upload-file chop \
             "https://codeberg.org/api/v1/repos/mphillips/chop/releases/${RELEASE_ID}/assets?name=chop-macos-arm64"
 
+      - name: Update Homebrew formula
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_TOKEN }}
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          SHA256=$(sha256sum chop | awk '{print $1}')
+
+          git clone https://x-access-token:${GH_TOKEN}@github.com/matthewp/homebrew-chop.git
+          cd homebrew-chop
+
+          cat > Formula/chop.rb << EOF
+          class Chop < Formula
+            desc "Unix-philosophy CLI todo manager"
+            homepage "https://codeberg.org/mphillips/chop"
+            url "https://codeberg.org/mphillips/chop/releases/download/v${VERSION}/chop-macos-arm64"
+            sha256 "${SHA256}"
+            version "${VERSION}"
+            license "BSD-3-Clause"
+
+            def install
+              bin.install "chop-macos-arm64" => "chop"
+            end
+
+            test do
+              assert_match version.to_s, shell_output("#{bin}/chop --version")
+            end
+          end
+          EOF
+
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add Formula/chop.rb
+          git commit -m "Update chop to v${VERSION}"
+          git push
+
   build-freebsd:
     runs-on: ubuntu-latest
     steps:
