@@ -71,3 +71,11 @@ jobs:
               --upload-file "$file" \
               "https://codeberg.org/api/v1/repos/mphillips/chop/releases/${RELEASE_ID}/assets?name=${filename}"
           done
+
+      - name: Trigger GitHub builds
+        run: |
+          curl -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/repos/matthewp/chop/actions/workflows/release.yaml/dispatches \
+            -d '{"ref":"main","inputs":{"version":"${{ github.ref_name }}"}}'
