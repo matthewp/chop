@@ -42,18 +42,24 @@ jobs:
             --upload-file chop \
             "https://codeberg.org/api/v1/repos/mphillips/chop/releases/${RELEASE_ID}/assets?name=chop-macos-arm64"
 
+      - name: Get binary checksum
+        id: checksum
+        run: echo "sha256=$(shasum -a 256 chop | awk '{print $1}')" >> $GITHUB_OUTPUT
+
+      - name: Checkout Homebrew tap
+        uses: actions/checkout@v4
+        with:
+          repository: matthewp/homebrew-chop
+          token: ${{ secrets.HOMEBREW_TOKEN }}
+          path: homebrew-chop
+
       - name: Update Homebrew formula
-        env:
-          GH_TOKEN: ${{ secrets.HOMEBREW_TOKEN }}
         run: |
           VERSION=${{ inputs.version }}
           VERSION=${VERSION#v}
-          SHA256=$(sha256sum chop | awk '{print $1}')
+          SHA256=${{ steps.checksum.outputs.sha256 }}
 
-          git clone https://matthewp:${GH_TOKEN}@github.com/matthewp/homebrew-chop.git
-          cd homebrew-chop
-
-          cat > Formula/chop.rb << EOF
+          cat > homebrew-chop/Formula/chop.rb << EOF
           class Chop < Formula
             desc "Unix-philosophy CLI todo manager"
             homepage "https://codeberg.org/mphillips/chop"
@@ -72,6 +78,7 @@ jobs:
           end
           EOF
 
+          cd homebrew-chop
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add Formula/chop.rb
