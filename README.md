@@ -15,6 +15,12 @@ Chop normalizes any text into todo format and filters by status. It reads from s
 
 ## Install
 
+| Platform | Binary | Package Manager |
+|----------|--------|-----------------|
+| Linux | `chop-linux-amd64` | `apt install chop` |
+| FreeBSD | `chop-freebsd-amd64` | `pkg install chop` |
+| macOS | `chop-macos-arm64` | - |
+
 ### Debian/Ubuntu (apt)
 
 ```bash
