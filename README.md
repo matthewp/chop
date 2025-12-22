@@ -39,11 +39,14 @@ sudo pkg install chop
 
 ### Binary download
 
-Grab a binary from [Releases](https://codeberg.org/mphillips/chop/releases) (Linux and FreeBSD):
+Grab a binary from [Releases](https://codeberg.org/mphillips/chop/releases):
 
 ```bash
 # Linux
 curl -LO https://codeberg.org/mphillips/chop/releases/latest/download/chop-linux-amd64
+
+# macOS (Apple Silicon)
+curl -LO https://codeberg.org/mphillips/chop/releases/latest/download/chop-macos-arm64
 
 # FreeBSD
 curl -LO https://codeberg.org/mphillips/chop/releases/latest/download/chop-freebsd-amd64

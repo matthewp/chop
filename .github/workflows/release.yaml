@@ -9,6 +9,38 @@ permissions:
   contents: write
 
 jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build
+        run: make
+
+      - name: Wait for Codeberg release
+        run: sleep 15
+
+      - name: Upload to Codeberg release
+        env:
+          CODEBERG_TOKEN: ${{ secrets.CODEBERG_TOKEN }}
+        run: |
+          TAG=${GITHUB_REF_NAME}
+
+          # Get release ID
+          RELEASE_ID=$(curl -s \
+            -H "Authorization: token ${CODEBERG_TOKEN}" \
+            "https://codeberg.org/api/v1/repos/mphillips/chop/releases/tags/${TAG}" \
+            | jq -r '.id')
+
+          # Upload binary
+          curl --fail \
+            -H "Authorization: token ${CODEBERG_TOKEN}" \
+            -X POST \
+            --upload-file chop \
+            "https://codeberg.org/api/v1/repos/mphillips/chop/releases/${RELEASE_ID}/assets?name=chop-macos-arm64"
+
   build-freebsd:
     runs-on: ubuntu-latest
     steps:
