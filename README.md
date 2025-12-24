@@ -17,7 +17,7 @@ Chop normalizes any text into todo format and filters by status. It reads from s
 
 | Platform | Binary | Package Manager |
 |----------|--------|-----------------|
-| Linux | `chop-linux-amd64` | `apt install chop` |
+| Linux | `chop-linux-amd64` | `apt install chop` / `yay -S chop` |
 | FreeBSD | `chop-freebsd-amd64` | `pkg install chop` |
 | macOS | `chop-macos-arm64` | `brew install chop` |
 
@@ -28,6 +28,14 @@ curl -fsSL https://codeberg.org/api/packages/mphillips/debian/repository.key | s
 echo "deb [signed-by=/etc/apt/keyrings/chop.asc] https://codeberg.org/api/packages/mphillips/debian stable main" | sudo tee /etc/apt/sources.list.d/chop.list
 sudo apt update && sudo apt install chop
 ```
+
+### Arch Linux (AUR)
+
+```bash
+yay -S chop
+```
+
+Or with any AUR helper (`paru -S chop`, etc).
 
 ### FreeBSD (pkg)
 
