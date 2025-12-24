@@ -191,8 +191,8 @@ jobs:
           sed -i "s/^sha256sums=.*/sha256sums=('${SHA256}')/" PKGBUILD
 
           # Regenerate .SRCINFO using Arch container
-          docker run --rm -v "$PWD":/pkg -w /pkg archlinux:latest bash -c \
-            "pacman -Sy --noconfirm base-devel && chown -R nobody:nobody /pkg && sudo -u nobody makepkg --printsrcinfo > .SRCINFO"
+          docker run --rm -v "$PWD/PKGBUILD":/PKGBUILD:ro archlinux:latest bash -c \
+            "pacman -Sy --noconfirm base-devel && cp /PKGBUILD /tmp/ && cd /tmp && makepkg --printsrcinfo" > .SRCINFO
 
           # Commit and push
           git config user.name "github-actions"
