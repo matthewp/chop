@@ -20,6 +20,9 @@ jobs:
           ref: ${{ inputs.version }}
           fetch-depth: 0
 
+      - name: Install scdoc
+        run: brew install scdoc
+
       - name: Build
         run: make VERSION=${{ inputs.version }}
 
