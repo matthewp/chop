@@ -7,8 +7,9 @@ PREFIX ?= /usr/local
 
 BIN = chop
 OBJS = main.o chop.o
+MAN = chop.1
 
-all: $(BIN)
+all: $(BIN) $(MAN)
 
 $(BIN): $(OBJS)
 	$(CC) $(LDFLAGS) -o $@ $(OBJS)
@@ -16,10 +17,15 @@ $(BIN): $(OBJS)
 .c.o:
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-clean:
-	rm -f $(OBJS) $(BIN)
+$(MAN): chop.1.scd
+	scdoc < $< > $@
 
-install: $(BIN)
+clean:
+	rm -f $(OBJS) $(BIN) $(MAN)
+
+install: $(BIN) $(MAN)
+	install -d $(PREFIX)/bin $(PREFIX)/share/man/man1
 	install -m 755 $(BIN) $(PREFIX)/bin/
+	install -m 644 $(MAN) $(PREFIX)/share/man/man1/
 
 .PHONY: all clean install

@@ -26,6 +26,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Install scdoc
+        run: apt-get update && apt-get install -y scdoc
+
       - name: Build
         run: make VERSION=${GITHUB_REF_NAME}
 
@@ -38,8 +41,10 @@ jobs:
         run: |
           VERSION=${GITHUB_REF_NAME#v}
           mkdir -p chop_${VERSION}_amd64/usr/local/bin
+          mkdir -p chop_${VERSION}_amd64/usr/local/share/man/man1
           mkdir -p chop_${VERSION}_amd64/DEBIAN
           cp chop chop_${VERSION}_amd64/usr/local/bin/
+          gzip -c chop.1 > chop_${VERSION}_amd64/usr/local/share/man/man1/chop.1.gz
           sed "s/\${VERSION}/${VERSION}/" debian/control > chop_${VERSION}_amd64/DEBIAN/control
           dpkg-deb --build chop_${VERSION}_amd64
           mv chop_${VERSION}_amd64.deb release/

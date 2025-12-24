@@ -101,6 +101,8 @@ jobs:
           release: "14.2"
           usesh: true
           envs: 'VERSION_TAG'
+          prepare: |
+            pkg install -y scdoc
           run: |
             make VERSION=${VERSION_TAG}
             mkdir -p release

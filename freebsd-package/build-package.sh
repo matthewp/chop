@@ -10,10 +10,14 @@ echo "Building FreeBSD package for version $VERSION"
 STAGEDIR=$(pwd)/stage
 rm -rf $STAGEDIR
 mkdir -p $STAGEDIR/usr/local/bin
+mkdir -p $STAGEDIR/usr/local/share/man/man1
 
 # Copy binary to staging
 cp release/chop-freebsd-amd64 $STAGEDIR/usr/local/bin/chop
 chmod +x $STAGEDIR/usr/local/bin/chop
+
+# Copy and compress man page
+gzip -c chop.1 > $STAGEDIR/usr/local/share/man/man1/chop.1.gz
 
 # Create manifest with version
 sed "s/%%VERSION%%/$VERSION/g" freebsd-package/pkg-manifest.ucl > pkg-manifest.ucl
