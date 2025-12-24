@@ -156,3 +156,47 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./gh-pages
+
+  update-aur:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update AUR package
+        env:
+          AUR_SSH_KEY: ${{ secrets.AUR_SSH_KEY }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          VERSION=${VERSION#v}
+
+          # Setup SSH for AUR
+          mkdir -p ~/.ssh
+          echo "$AUR_SSH_KEY" > ~/.ssh/aur
+          chmod 600 ~/.ssh/aur
+          cat >> ~/.ssh/config << 'EOF'
+          Host aur.archlinux.org
+            IdentityFile ~/.ssh/aur
+            User aur
+          EOF
+          ssh-keyscan aur.archlinux.org >> ~/.ssh/known_hosts 2>/dev/null
+
+          # Clone AUR repo
+          git clone ssh://aur@aur.archlinux.org/chop.git aur-chop
+          cd aur-chop
+
+          # Get source tarball checksum
+          SHA256=$(curl -sL "https://codeberg.org/mphillips/chop/archive/v${VERSION}.tar.gz" | sha256sum | awk '{print $1}')
+
+          # Update PKGBUILD
+          sed -i "s/^pkgver=.*/pkgver=${VERSION}/" PKGBUILD
+          sed -i "s/^pkgrel=.*/pkgrel=1/" PKGBUILD
+          sed -i "s/^sha256sums=.*/sha256sums=('${SHA256}')/" PKGBUILD
+
+          # Regenerate .SRCINFO using Arch container
+          docker run --rm -v "$PWD":/pkg -w /pkg archlinux:latest bash -c \
+            "pacman -Sy --noconfirm base-devel && chown -R nobody:nobody /pkg && sudo -u nobody makepkg --printsrcinfo > .SRCINFO"
+
+          # Commit and push
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add PKGBUILD .SRCINFO
+          git diff --cached --quiet || git commit -m "Update to ${VERSION}"
+          git push

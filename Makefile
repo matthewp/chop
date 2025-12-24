@@ -24,8 +24,8 @@ clean:
 	rm -f $(OBJS) $(BIN) $(MAN)
 
 install: $(BIN) $(MAN)
-	install -d $(PREFIX)/bin $(PREFIX)/share/man/man1
-	install -m 755 $(BIN) $(PREFIX)/bin/
-	install -m 644 $(MAN) $(PREFIX)/share/man/man1/
+	install -d $(DESTDIR)$(PREFIX)/bin $(DESTDIR)$(PREFIX)/share/man/man1
+	install -m 755 $(BIN) $(DESTDIR)$(PREFIX)/bin/
+	install -m 644 $(MAN) $(DESTDIR)$(PREFIX)/share/man/man1/
 
 .PHONY: all clean install
