@@ -18,7 +18,7 @@ $(BIN): $(OBJS)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 $(MAN): chop.1.scd
-	scdoc < $< > $@
+	scdoc < chop.1.scd > $@
 
 clean:
 	rm -f $(OBJS) $(BIN) $(MAN)
