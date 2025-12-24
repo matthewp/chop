@@ -183,7 +183,7 @@ jobs:
 
           build() {
               cd "\$pkgname"
-              make
+              make VERSION=\$pkgver
           }
 
           package() {
