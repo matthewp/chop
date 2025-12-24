@@ -27,7 +27,7 @@ jobs:
           fetch-depth: 0
 
       - name: Build
-        run: make
+        run: make VERSION=${GITHUB_REF_NAME}
 
       - name: Package binary
         run: |

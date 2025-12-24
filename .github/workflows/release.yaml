@@ -21,7 +21,7 @@ jobs:
           fetch-depth: 0
 
       - name: Build
-        run: make
+        run: make VERSION=${{ inputs.version }}
 
       - name: Upload to Codeberg release
         env:
@@ -102,7 +102,7 @@ jobs:
           usesh: true
           envs: 'VERSION_TAG'
           run: |
-            make
+            make VERSION=${VERSION_TAG}
             mkdir -p release
             cp chop release/chop-freebsd-amd64
 
