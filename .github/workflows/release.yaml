@@ -160,43 +160,45 @@ jobs:
   update-aur:
     runs-on: ubuntu-latest
     steps:
-      - name: Update AUR package
+      - name: Generate PKGBUILD
         env:
-          AUR_SSH_KEY: ${{ secrets.AUR_SSH_KEY }}
           VERSION: ${{ inputs.version }}
         run: |
           VERSION=${VERSION#v}
-
-          # Setup SSH for AUR
-          mkdir -p ~/.ssh
-          echo "$AUR_SSH_KEY" > ~/.ssh/aur
-          chmod 600 ~/.ssh/aur
-          cat >> ~/.ssh/config << 'EOF'
-          Host aur.archlinux.org
-            IdentityFile ~/.ssh/aur
-            User aur
-          EOF
-          ssh-keyscan aur.archlinux.org >> ~/.ssh/known_hosts 2>/dev/null
-
-          # Clone AUR repo
-          git clone ssh://aur@aur.archlinux.org/chop.git aur-chop
-          cd aur-chop
-
-          # Get source tarball checksum
           SHA256=$(curl -sL "https://codeberg.org/mphillips/chop/archive/v${VERSION}.tar.gz" | sha256sum | awk '{print $1}')
 
-          # Update PKGBUILD
-          sed -i "s/^pkgver=.*/pkgver=${VERSION}/" PKGBUILD
-          sed -i "s/^pkgrel=.*/pkgrel=1/" PKGBUILD
-          sed -i "s/^sha256sums=.*/sha256sums=('${SHA256}')/" PKGBUILD
+          cat > PKGBUILD << EOF
+          # Maintainer: Matthew Phillips <matthew@matthewphillips.info>
+          pkgname=chop
+          pkgver=${VERSION}
+          pkgrel=1
+          pkgdesc="Unix-philosophy CLI todo manager"
+          arch=('x86_64' 'aarch64')
+          url="https://codeberg.org/mphillips/chop"
+          license=('BSD-3-Clause')
+          depends=('glibc')
+          makedepends=('scdoc')
+          source=("\$pkgname-\$pkgver.tar.gz::https://codeberg.org/mphillips/chop/archive/v\$pkgver.tar.gz")
+          sha256sums=('${SHA256}')
 
-          # Regenerate .SRCINFO using Arch container
-          docker run --rm -v "$PWD/PKGBUILD":/PKGBUILD:ro archlinux:latest bash -c \
-            "pacman -Sy --noconfirm base-devel && cp /PKGBUILD /tmp/ && cd /tmp && makepkg --printsrcinfo" > .SRCINFO
+          build() {
+              cd "\$pkgname"
+              make
+          }
 
-          # Commit and push
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add PKGBUILD .SRCINFO
-          git diff --cached --quiet || git commit -m "Update to ${VERSION}"
-          git push
+          package() {
+              cd "\$pkgname"
+              make DESTDIR="\$pkgdir" PREFIX=/usr install
+              install -Dm644 LICENSE "\$pkgdir/usr/share/licenses/\$pkgname/LICENSE"
+          }
+          EOF
+
+      - name: Publish to AUR
+        uses: KSXGitHub/github-actions-deploy-aur@v3
+        with:
+          pkgname: chop
+          pkgbuild: ./PKGBUILD
+          commit_username: github-actions
+          commit_email: github-actions@github.com
+          ssh_private_key: ${{ secrets.AUR_SSH_KEY }}
+          commit_message: "Update to ${{ inputs.version }}"
