@@ -45,9 +45,18 @@ jobs:
             --upload-file chop \
             "https://codeberg.org/api/v1/repos/mphillips/chop/releases/${RELEASE_ID}/assets?name=chop-macos-arm64"
 
-      - name: Get binary checksum
+          # Upload man page
+          curl --fail \
+            -H "Authorization: token ${CODEBERG_TOKEN}" \
+            -X POST \
+            --upload-file chop.1 \
+            "https://codeberg.org/api/v1/repos/mphillips/chop/releases/${RELEASE_ID}/assets?name=chop.1"
+
+      - name: Get checksums
         id: checksum
-        run: echo "sha256=$(shasum -a 256 chop | awk '{print $1}')" >> $GITHUB_OUTPUT
+        run: |
+          echo "sha256=$(shasum -a 256 chop | awk '{print $1}')" >> $GITHUB_OUTPUT
+          echo "man_sha256=$(shasum -a 256 chop.1 | awk '{print $1}')" >> $GITHUB_OUTPUT
 
       - name: Checkout Homebrew tap
         uses: actions/checkout@v4
@@ -61,6 +70,7 @@ jobs:
           VERSION=${{ inputs.version }}
           VERSION=${VERSION#v}
           SHA256=${{ steps.checksum.outputs.sha256 }}
+          MAN_SHA256=${{ steps.checksum.outputs.man_sha256 }}
 
           cat > homebrew-chop/Formula/chop.rb << EOF
           class Chop < Formula
@@ -71,8 +81,14 @@ jobs:
             version "${VERSION}"
             license "BSD-3-Clause"
 
+            resource "manpage" do
+              url "https://codeberg.org/mphillips/chop/releases/download/v${VERSION}/chop.1"
+              sha256 "${MAN_SHA256}"
+            end
+
             def install
               bin.install "chop-macos-arm64" => "chop"
+              resource("manpage").stage { man1.install "chop.1" }
             end
 
             test do
